@@ -1,6 +1,7 @@
 # Modules
 import pygame
 import math
+from interface import Data
 
 # Init
 pygame.init()
@@ -46,7 +47,7 @@ SECOND_P_COLOR = (255, 255, 255)
 # Pendulum constants
 GRAVITY = 9.81
 # Epuisement
-DAMPING_FACTOR = 0.5
+DAMPING_FACTOR = 1
 
 def compute_accelerations(theta1, theta2, theta1_dot, theta2_dot):
     num1 = -GRAVITY * (2 * FIRST_P_MASS + SECOND_P_MASS) * math.sin(theta1)
@@ -55,7 +56,6 @@ def compute_accelerations(theta1, theta2, theta1_dot, theta2_dot):
     num4 = theta2_dot ** 2 * SECOND_P_LENGTH + theta1_dot ** 2 * FIRST_P_LENGTH * math.cos(theta1 - theta2)
     den = FIRST_P_LENGTH * (2 * FIRST_P_MASS + SECOND_P_MASS - SECOND_P_MASS * math.cos(2 * theta1 - 2 * theta2))
     theta1_ddot = (num1 + num2 + num3 * num4) / den
-    print(f"")
 
     num5 = 2 * math.sin(theta1 - theta2)
     num6 = (theta1_dot ** 2 * FIRST_P_LENGTH * (FIRST_P_MASS + SECOND_P_MASS))
@@ -63,7 +63,6 @@ def compute_accelerations(theta1, theta2, theta1_dot, theta2_dot):
     num8 = theta2_dot ** 2 * SECOND_P_LENGTH * SECOND_P_MASS * math.cos(theta1 - theta2)
     den2 = SECOND_P_LENGTH * (2 * FIRST_P_MASS + SECOND_P_MASS - SECOND_P_MASS * math.cos(2 * theta1 - 2 * theta2))
     theta2_ddot = (num5 * (num6 + num7 + num8)) / den2
-    print(f"theta1: {theta1_ddot}; theta2: {theta2_ddot}")
 
     return theta1_ddot, theta2_ddot
 
@@ -133,17 +132,23 @@ class Pendulum:
         self.circ = pygame.draw.circle(screen, self.color, (self.end_x, self.end_y), BOB_RADIUS)
 
 # Main loop
+##############################################################################
+simulation_data = Data()
+
+simulation_data.value_interface()
+
 pendulum_1 = Pendulum(FIRST_P_LENGTH, FIRST_P_THETA, FIRST_P_MASS, FIRST_P_COLOR, FIRST_P_WIDTH, WIDTH / 2, HEIGHT/2)
 pendulum_2 = Pendulum(SECOND_P_LENGTH, SECOND_P_THETA, SECOND_P_MASS, SECOND_P_COLOR, SECOND_P_WIDTH, pendulum_1.end_x, pendulum_1.end_y)
 positions = []
 POSITION_LIMIT = int(FPS * 2)
 TRAIL_SIZE = int(WIDTH * 0.005)
 ENABLE_TRAIL = True
-while running:
+
+while simulation_data.simulation_state:
     for event in pygame.event.get():
         mouse_pos_x, mouse_pos_y = pygame.mouse.get_pos()
         if event.type == pygame.QUIT:
-            running = False
+            simulation_data.simulation_state = False
 
     dt = 0.28
     FIRST_P_THETA, SECOND_P_THETA, FIRST_THETA_DOT, SECOND_THETA_DOT = rk4_step(DAMPING_FACTOR, FIRST_P_THETA, SECOND_P_THETA, FIRST_THETA_DOT, SECOND_THETA_DOT, dt)
