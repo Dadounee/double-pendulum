@@ -1,7 +1,8 @@
 from tkinter import *
 from tkinter import ttk
+from simulation import *
 
-# definition de la taille de l'ecran (a modifier si differant)
+# definition de la taille de l'ecran (a modifier si different)
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 """
@@ -10,9 +11,10 @@ SECOND_P_LENGTH = BASE_LENGTH
 FIRST_P_WIDTH = int(WIDTH * PENDULUM_WIDTH_RATIO)
 SECOND_P_WIDTH = int(WIDTH * PENDULUM_WIDTH_RATIO)
 
-
-FIRST_P_THETA = 0 # math.pi/90
+Vitesse_angulaire = []
+FIRST_P_THETA = 0 # math.pi/180
 SECOND_P_THETA = 0 # math.pi/180
+
 
 FIRST_P_MASS = 1
 SECOND_P_MASS = 1
@@ -22,27 +24,27 @@ SECOND_THETA_DOT = 0
 FIRST_P_COLOR = (255, 255, 255)
 SECOND_P_COLOR = (255, 255, 255)
 
-DAMPING_FACTOR = 0.5
+ = 2
 """
 class Data:
 
-    def __init__(self, loss_factor: float = 1.0):
+    def __init__(self, amortissement: float = 1.0):
 
         self.simulation_state = 0
 
         # simulation vars
-        self.loss_factor = loss_factor
+        self.amortissement = amortissement
         self.first_pend_th = 0.0
         self.second_pend_th = 0.0
 
         # tkinter vars
         self.__window = Tk()
         self.simulation_start = Button(
-                font=('Arial', SCREEN_HEIGHT // 135),
-                text="start simulation",
-                activebackground="#808080",
-                command=self.start_sim
-                )
+            font=('Arial', SCREEN_HEIGHT // 135),
+            text="start simulation",
+            activebackground="#808080",
+            command=self.start_sim
+            )
         self.entries = {
             "loss factor": Entry(
                 font=('Arial', SCREEN_HEIGHT // 135),
@@ -76,29 +78,35 @@ class Data:
             )
         }
 
-    def start_sim(self):
-        
-        self.simulation_state = 1
+    def pack_data(self):
         packed_data = {
-            "energy loss": self.loss_factor,
+            "energy loss": self.amortissement,
             "thetha 1": self.first_pend_th,
             "thetha 2": self.second_pend_th
         }
         return packed_data
     
+    def start_sim(self):
+        
+        self.simulation_state = 1
+        packed_data = self.pack_data()
+        simulation = Sim()
+        simulation.simulation()
+        
+    
     # sortie de focus
-    def loss_factor_focusout(self, event):
+    def amortissement_focusout(self, event):
 
         new_value = self.entries["loss factor"].get()
         if (new_value == ""):
-            self.entries["loss factor"].insert(0, f"{self.loss_factor}")
+            self.entries["loss factor"].insert(0, f"{self.amortissement}")
             return
         try:
-            self.loss_factor = float(new_value)
+            self.amortissement = float(new_value)
         except ValueError:
             # en cas d'erreur on remet l'ancienne valeur
             self.entries["loss factor"].delete(0, len(new_value))
-            self.entries["loss factor"].insert(0, f"{self.loss_factor}")
+            self.entries["loss factor"].insert(0, f"{self.amortissement}")
 
     def first_theta_focusout(self, event):
 
@@ -129,8 +137,8 @@ class Data:
     # fonctions membre
     def insert_base_values(self) -> None:
 
-        self.entries["loss factor"].insert(0, f"{self.loss_factor}")
-        self.entries["loss factor"].bind("<FocusOut>", self.loss_factor_focusout)
+        self.entries["loss factor"].insert(0, f"{self.amortissement}")
+        self.entries["loss factor"].bind("<FocusOut>", self.amortissement_focusout)
 
         self.entries["theta 1"].insert(0, f"{self.first_pend_th}")
         self.entries["theta 1"].bind("<FocusOut>", self.first_theta_focusout)
