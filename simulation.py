@@ -9,8 +9,6 @@ FULLSCREEN = True
 DEFAULT_WIDTH = 1000
 DEFAULT_HEIGHT = 600
 FPS = 60
-# Pendulum constants
-GRAVITY = 9.81
 
 # Pendulum class
 class Pendulum:
@@ -40,6 +38,9 @@ class Sim:
         # Init
         pygame.init()
 
+        self.plot_graph = 0
+
+        self.GRAVITY = 9.81
         self.WIDTH = pygame.display.Info().current_w if FULLSCREEN == True else DEFAULT_WIDTH
         self.HEIGHT = pygame.display.Info().current_h if FULLSCREEN == True else DEFAULT_HEIGHT
         # Clock
@@ -72,26 +73,61 @@ class Sim:
         self.SECOND_P_COLOR = (255, 255, 255)
 
         # Epuisement
-        self.DAMPING_FACTOR = 1.0001
-        self.ANGLE_ACCEL = 35*math.pi/180
+        self.DAMPING_FACTOR = 0.0
+        self.MAX_ANGLE_ACCEL = 0 #35*math.pi/180
+
+    def get_data(self, *args, **kwargs) -> None:
+
+        #on va réatribuer les données a notre simulation
+        for value in kwargs.keys():
+            match value:
+                case "amortissement":
+                    self.DAMPING_FACTOR = kwargs[value]
+                    continue
+                case "max_angle":
+                    self.MAX_ANGLE_ACCEL = kwargs[value] * math.pi / 180
+                    continue
+                case "thetha1":
+                    self.FIRST_P_THETA = kwargs[value] * math.pi / 180
+                    continue
+                case "thetha2":
+                    self.SECOND_P_THETA = kwargs[value] * math.pi / 180
+                    continue
+                case "mass1":
+                    self.FIRST_P_MASS = kwargs[value]
+                    continue
+                case "mass2":
+                    self.SECOND_P_MASS = kwargs[value]
+                    continue
+                case "gravity":
+                    self.GRAVITY = kwargs[value]
+                    continue
+                case "graph":
+                    self.plot_graph = kwargs[value]
+                    continue
+                case _:
+                    pass
+
+###############################################################################################################################################################################################
+###############################################################################################################################################################################################
 
     # a modifier
     def compute_accelerations(self, theta1, theta2, theta1_dot, theta2_dot):
-        if 270*math.pi/180 <= theta1 <= self.ANGLE_ACCEL:
+        if 270*math.pi/180 <= theta1 <= self.MAX_ANGLE_ACCEL:
             theta1ddot = theta2_ddot
-        num1 = (2 * self.FIRST_P_MASS + self.SECOND_P_MASS) * math.sin(theta1) * -GRAVITY 
-        num2 = -self.SECOND_P_MASS * GRAVITY * math.sin(theta1 - 2 * theta2)
+        num1 = (2 * self.FIRST_P_MASS + self.SECOND_P_MASS) * math.sin(theta1) * -self.GRAVITY 
+        num2 = -self.SECOND_P_MASS * self.GRAVITY * math.sin(theta1 - 2 * theta2)
         num3 = -2 * math.sin(theta1 - theta2) * self.SECOND_P_MASS
         num4 = theta2_dot ** 2 * self.SECOND_P_LENGTH + theta1_dot ** 2 * self.FIRST_P_LENGTH * math.cos(theta1 - theta2)
         den = self.FIRST_P_LENGTH * (2 * self.FIRST_P_MASS + self.SECOND_P_MASS - self.SECOND_P_MASS * math.cos(2 * theta1 - 2 * theta2))
         theta1_ddot = ((num1 + num2 + num3 * num4) / den)
         num5 = 2 * math.sin(theta1 - theta2)
         num6 = (theta1_dot ** 2 * self.FIRST_P_LENGTH * (self.FIRST_P_MASS + self.SECOND_P_MASS))
-        num7 = GRAVITY * (self.FIRST_P_MASS + self.SECOND_P_MASS) * math.cos(theta1)
+        num7 = self.GRAVITY * (self.FIRST_P_MASS + self.SECOND_P_MASS) * math.cos(theta1)
         num8 = theta2_dot ** 2 * self.SECOND_P_LENGTH * self.SECOND_P_MASS * math.cos(theta1 - theta2)
         den2 = self.SECOND_P_LENGTH * (2 * self.FIRST_P_MASS + self.SECOND_P_MASS - self.SECOND_P_MASS * math.cos(2 * theta1 - 2 * theta2))
         theta2_ddot = (num5 * (num6 + num7 + num8)) / den2
-        # if theta1 >= self.ANGLE_ACCEL:
+        # if theta1 >= self.MAX_ANGLE_ACCEL:
         #    theta2_ddot += 2
 
         return theta1_ddot, theta2_ddot
@@ -150,7 +186,10 @@ class Sim:
         I12 = self.SECOND_P_MASS * l1 * l2 * np.cos(theta1 - theta2)
 
         return (0.5 * (I11 * theta1_dot**2 +2 * I12 * theta1_dot * theta2_dot + I22 * theta2_dot**2))
-    
+
+###############################################################################################################################################################################################
+############################################################################################################################################################################################### 
+
     def simulation(self):
         pendulum_1 = Pendulum(self.FIRST_P_LENGTH, self.FIRST_P_THETA, self.FIRST_P_MASS, self.FIRST_P_COLOR, self.FIRST_P_WIDTH, self.WIDTH /2, self.HEIGHT/2)
         pendulum_2 = Pendulum(self.SECOND_P_LENGTH, self.SECOND_P_THETA, self.SECOND_P_MASS, self.SECOND_P_COLOR, self.SECOND_P_WIDTH, pendulum_1.end_x, pendulum_1.end_y)
@@ -181,13 +220,14 @@ class Sim:
 
         pygame.quit()
 
-        # recup tt pr plot
-        plt.figure(1)           
-        plt.xlabel('theta')
-        plt.ylabel("vitesse angulaire")
-        plt.title(f"Vitesse angulaire en fonction de l'angle avec une accélération pour à theta = {self.ANGLE_ACCEL}°")
-        plt.plot(VARTHETA, KINETIK, 'r-')              #on trace la vitesse angulaire en fonction de la position
-        plt.show()
+        if self.plot_graph:
+            # recup tt pr plot
+            plt.figure(1)           
+            plt.xlabel('theta')
+            plt.ylabel("vitesse angulaire")
+            plt.title(f"Vitesse angulaire en fonction de l'angle avec une accélération pour à theta = {self.MAX_ANGLE_ACCEL * 180 / math.pi}°")
+            plt.plot(VARTHETA, KINETIK, 'r-')              #on trace la vitesse angulaire en fonction de la position
+            plt.show()
 
 
 
